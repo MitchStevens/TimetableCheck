@@ -6,47 +6,114 @@
 
 package timetablecheckfx;
 
+import java.awt.Point;
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.layout.StackPane;
-import javafx.scene.shape.Line;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.shape.*;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javax.swing.JPanel;
 
 /**
  *
  * @author Mitch
  */
 public class TimetableCheckFX extends Application {
-    public Timetable timetable;
-    final static int xPush = 10;
-    final static int yPush = 10;
-    final static int numRows = 5;
-    final static int numCols = 12;
-    private static double xDist = 0;
-    private static double yDist = 0;
+    public  static final File           save           = new File("Timetables/savedTimetables.tbl");
+    private static final File           backup         = new File("Timetables/backupTimetables.tbl");
+    
+    private static             TimetableList  allTimetables  = new TimetableList().fromFile(save);
+    public  static             Timetable      current        = null;
+    private static             List<String>   allNames       = allTimetables.getNames();
+    private static final String         versionName    = "0.3BETA";
+    private static             JPanel         canvas         = new JPanel();
+    private static final List<String>   daysOfWeek     = Arrays.asList("Monday, Tuesday, Wednesday, Thursday, Friday".split(", "));
+    
+    private static Point            prevClick      = null;
+    private static Moment           then           = null;
+    private static boolean          tableEditable  = false;
+    public  static int              snapTo         = 60;
+    public  static int              defaultSubject = 0;
+    
+    private static final int COL_NUM        = 5;
+    private static final int ROW_NUM        = 12;
+    private static final int VERT_MARGIN    = 30;
+    private static final int HORI_MARGIN    = 30;
+    private static final int minTime         = 8*60;
+    private static final int maxTime         = minTime + ROW_NUM*60;
+    
+    private static int panelHeight = 1000;
+    private static int panelWidth = 700;
+    private static double colSpacing = (panelWidth - HORI_MARGIN*2)/(double)(COL_NUM);
+    private static double rowSpacing = (panelHeight - VERT_MARGIN*2)/(double)(ROW_NUM +1);
+    
+    private void initialise(){
+        
+    }
     
     @Override
     public void start(Stage primaryStage) {        
         StackPane root = new StackPane();
-        Scene scene = new Scene(root, 300, 250);
+        Scene scene = new Scene(root, 1000, 700);
         
-        Line[] rows = new Line[numRows];
-        Line[] cols = new Line[numCols];
+        BorderPane border = new BorderPane();
         
-        for(int i = 0; i < numCols; i++){
-            cols[i] = new Line(xPush + 7, 50*i, 100, i*20);
-            root.getChildren().add(cols[i]);
-        }
-        
+        border.setTop(getMenu());
+        root.getChildren().add(border);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
     
+    public MenuBar getMenu(){
+        MenuBar tbr = new MenuBar();
+        
+        Menu menuHome = new Menu("Home");
+        MenuItem getBreaksItem = new MenuItem("Get Breaks");
+        getBreaksItem.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent t) {
+                //Do things
+            }
+        });
+        MenuItem editTimetableItem = new MenuItem("Edit");
+        editTimetableItem.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent t) {
+                //Do things
+            }
+        });
+        menuHome.getItems().addAll(getBreaksItem);
+        menuHome.getItems().addAll(editTimetableItem);
+        
+        
+        Menu menuTimetable = new Menu("Timetable");
+        MenuItem importItem = new MenuItem("Import");
+        importItem.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent t) {
+                //Do things
+            }
+        });
+        MenuItem deleteItem = new MenuItem("Delete");
+        deleteItem.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent t) {
+                //Do things
+            }
+        });
+        menuTimetable.getItems().addAll(importItem);
+        menuTimetable.getItems().addAll(deleteItem);
+        
+        Menu menuHelp = new Menu("Help");
+        tbr.getMenus().addAll(menuHome, menuTimetable, menuHelp);
+        return tbr;
+    }
     
-
+    
     /**
      * The main() method is ignored in correctly deployed JavaFX application.
      * main() serves only as fallback in case the application can not be
