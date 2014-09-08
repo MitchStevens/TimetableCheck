@@ -26,10 +26,11 @@ class TimetableList {
     }
     
     public TimetableList(){
-        tList = new ArrayList<>();
+        this.tList = new ArrayList<>();
     }
     
-    public TimetableList fromFile(File file){
+    public static TimetableList fromFile(File file){
+        TimetableList tbr = new TimetableList();
         try{
             if(!file.exists()){
                 new File("Timetables").mkdir();
@@ -41,9 +42,8 @@ class TimetableList {
                         + "/780,840,0,EMPTY;840,900,3,EMPTY;960,1080,3,EMPTY;600,660,0,EMPTY;"
                         + "/540,600,2,EMPTY;600,660,0,EMPTY;"
                         + "/540,600,2,EMPTY;660,780,1,EMPTY;780,840,1,EMPTY;840,900,2,EMPTY;");
-                List<Timetable> tList = new ArrayList<>();
-                tList.add(mitch);
-                return new TimetableList(tList);
+                tbr.addTimetable(mitch);
+                return tbr;
             }
             
             FileInputStream fstream = new FileInputStream(file);
@@ -53,13 +53,13 @@ class TimetableList {
             
             while ((strLine = br.readLine()) != null)   {              
                 Timetable temp = new Timetable(strLine);
-                tList.add(temp);
+                tbr.addTimetable(temp);
             }
             in.close();
         }
         catch (Exception e){
             System.err.println("Read file error: Program currently eating a bag of hot dicks." + e.getMessage());}
-        return this;
+        return tbr;
     }
     
     public void addTimetable(Timetable table){

@@ -18,6 +18,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.shape.*;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javax.swing.JPanel;
@@ -31,10 +32,10 @@ public class TimetableCheckFX extends Application {
     private static final File           backup         = new File("Timetables/backupTimetables.tbl");
     
     private static             TimetableList  allTimetables  = new TimetableList().fromFile(save);
-    public  static             Timetable      current        = null;
+    public  static             Timetable      myTimetable        = null;
     private static             List<String>   allNames       = allTimetables.getNames();
     private static final String         versionName    = "0.3BETA";
-    private static             JPanel         canvas         = new JPanel();
+    private static             Pane         canvas         = new Pane();
     private static final List<String>   daysOfWeek     = Arrays.asList("Monday, Tuesday, Wednesday, Thursday, Friday".split(", "));
     
     private static Point            prevClick      = null;
@@ -55,18 +56,21 @@ public class TimetableCheckFX extends Application {
     private static double colSpacing = (panelWidth - HORI_MARGIN*2)/(double)(COL_NUM);
     private static double rowSpacing = (panelHeight - VERT_MARGIN*2)/(double)(ROW_NUM +1);
     
-    private void initialise(){
-        
+    private static void initialise(){
+        //allTimetables = TimetableList.fromFile(save);
     }
     
     @Override
     public void start(Stage primaryStage) {        
         StackPane root = new StackPane();
         Scene scene = new Scene(root, 1000, 700);
+        scene.getStylesheets().add("timetablecheckfx/StyleSheet.css");
         
         BorderPane border = new BorderPane();
         
         border.setTop(getMenu());
+        border.setLeft(getSideBar("home"));
+        border.getLeft().setStyle("side_bar");
         root.getChildren().add(border);
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -74,6 +78,7 @@ public class TimetableCheckFX extends Application {
     
     public MenuBar getMenu(){
         MenuBar tbr = new MenuBar();
+        tbr.getStyleClass().add("menu");
         
         Menu menuHome = new Menu("Home");
         MenuItem getBreaksItem = new MenuItem("Get Breaks");
@@ -111,6 +116,25 @@ public class TimetableCheckFX extends Application {
         Menu menuHelp = new Menu("Help");
         tbr.getMenus().addAll(menuHome, menuTimetable, menuHelp);
         return tbr;
+    }
+    
+    public AnchorPane getSideBar(String st){
+        AnchorPane tbr = new AnchorPane();
+        tbr.setStyle("side_bar");
+        //for create
+        VBox editPane = new VBox(10);
+            editPane.setStyle("v_box");
+            Label editTitle = new Label("Edit Timetable");
+            editTitle.setStyle("title");
+            Label editl1 = new Label("Add/Remove Lessons");
+            ListView editList = new ListView();
+            editList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            Button editb1 = new Button("Remove Timetable");
+            Button editb2 = new Button("Add Timetable");
+            editPane.getChildren().addAll(editTitle, editl1, editList, editb1, editb2);
+            tbr.getChildren().addAll(editPane);
+        return tbr;
+
     }
     
     
