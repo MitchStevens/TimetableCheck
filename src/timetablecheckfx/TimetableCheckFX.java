@@ -10,17 +10,26 @@ import java.awt.Point;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import javafx.collections.*;
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.*;
 import javafx.scene.shape.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 /**
@@ -34,63 +43,62 @@ public class TimetableCheckFX extends Application {
     private static             TimetableList  allTimetables  = new TimetableList().fromFile(save);
     public  static             Timetable      myTimetable        = null;
     private static             List<String>   allNames       = allTimetables.getNames();
-    private static final String         versionName    = "0.3BETA";
-    private static             Pane         canvas         = new Pane();
-    private static final List<String>   daysOfWeek     = Arrays.asList("Monday, Tuesday, Wednesday, Thursday, Friday".split(", "));
+    public  static final String         versionName    = "0.3BETA";
     
-    private static Point            prevClick      = null;
-    private static Moment           then           = null;
-    private static boolean          tableEditable  = false;
-    public  static int              snapTo         = 60;
-    public  static int              defaultSubject = 0;
+    private static TimetablePane    tPane;
+    private static BorderPane       border = new BorderPane();
+    private static StackPane        sidebar;
+    private static MenuBar          menu;
     
-    private static final int COL_NUM        = 5;
-    private static final int ROW_NUM        = 12;
-    private static final int VERT_MARGIN    = 30;
-    private static final int HORI_MARGIN    = 30;
-    private static final int minTime         = 8*60;
-    private static final int maxTime         = minTime + ROW_NUM*60;
+    private static int panelHeight = 700;
+    private static int panelWidth = 900;
     
-    private static int panelHeight = 1000;
-    private static int panelWidth = 700;
-    private static double colSpacing = (panelWidth - HORI_MARGIN*2)/(double)(COL_NUM);
-    private static double rowSpacing = (panelHeight - VERT_MARGIN*2)/(double)(ROW_NUM +1);
-    
-    private static void initialise(){
+    private void initialise(){
         //allTimetables = TimetableList.fromFile(save);
+        getMenu();
+        getSideBar();
+        
     }
     
     @Override
     public void start(Stage primaryStage) {        
         StackPane root = new StackPane();
-        Scene scene = new Scene(root, 1000, 700);
+        Scene scene = new Scene(root, panelWidth, panelHeight);
         scene.getStylesheets().add("timetablecheckfx/StyleSheet.css");
         
-        BorderPane border = new BorderPane();
+        initialise();
+        border = new BorderPane();
+        border.setTop(menu);
+        border.setLeft(sidebar);
+        tPane = new TimetablePane(null, panelWidth - 250, panelHeight - 30);
+        border.setCenter(tPane.pane);
         
-        border.setTop(getMenu());
-        border.setLeft(getSideBar("home"));
-        border.getLeft().setStyle("side_bar");
         root.getChildren().add(border);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
-    
-    public MenuBar getMenu(){
-        MenuBar tbr = new MenuBar();
-        tbr.getStyleClass().add("menu");
+    //CREATING PANES
+    public void getMenu(){
+        menu = new MenuBar();
+        menu.getStyleClass().add("menu");
         
         Menu menuHome = new Menu("Home");
         MenuItem getBreaksItem = new MenuItem("Get Breaks");
         getBreaksItem.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
-                //Do things
+                for(Node n : sidebar.getChildren())
+                    n.toBack();
+                sidebar.getChildren().get(1).toFront();
+                System.out.println("getbreaks");
             }
         });
         MenuItem editTimetableItem = new MenuItem("Edit");
         editTimetableItem.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
-                //Do things
+               for(Node n : sidebar.getChildren())
+                   n.toBack();
+               sidebar.getChildren().get(0).toFront();
+                System.out.println("edit");
             }
         });
         menuHome.getItems().addAll(getBreaksItem);
@@ -114,27 +122,66 @@ public class TimetableCheckFX extends Application {
         menuTimetable.getItems().addAll(deleteItem);
         
         Menu menuHelp = new Menu("Help");
-        tbr.getMenus().addAll(menuHome, menuTimetable, menuHelp);
-        return tbr;
+        MenuItem tutorialItem = new MenuItem("Tutorial");
+        tutorialItem.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent t) {
+                //Do things
+            }
+        });
+        MenuItem aboutItem = new MenuItem("About");
+        aboutItem.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent t) {
+                 String msg = "<html>TimetableCheck - Version "+versionName+
+                     "  <br>Made by Mitch Stevens"+
+                     "  <br>Contact at somecleverstatement@gmail.com"+
+                     "</html>";
+
+                JOptionPane optionPane = new JOptionPane();
+                optionPane.setMessage(msg);
+                optionPane.setMessageType(JOptionPane.INFORMATION_MESSAGE);
+                JDialog dialog = optionPane.createDialog(null, "Width 100");
+                dialog.setVisible(true);
+            }
+        });
+        menuHelp.getItems().addAll(tutorialItem, aboutItem);
+        
+        menu.getMenus().addAll(menuHome, menuTimetable, menuHelp);
     }
     
-    public AnchorPane getSideBar(String st){
-        AnchorPane tbr = new AnchorPane();
-        tbr.setStyle("side_bar");
-        //for create
-        VBox editPane = new VBox(10);
-            editPane.setStyle("v_box");
+    public void getSideBar(){
+        sidebar = new StackPane();
+        sidebar.getStyleClass().add("side_bar");
+        //for editPane
+        VBox editPane = new VBox();
+            editPane.setPrefWidth(250);
+            editPane.getStyleClass().add("vbox");
             Label editTitle = new Label("Edit Timetable");
-            editTitle.setStyle("title");
+            editTitle.getStyleClass().add("title");
             Label editl1 = new Label("Add/Remove Lessons");
-            ListView editList = new ListView();
+            ObservableList<String> names = FXCollections.observableArrayList(
+                "Iron, Carbon, Thallium, Nitrogen, Oxygen".split(", "));
+            ListView<String> editList = new ListView(names);
+            editList.setPrefHeight(142);
             editList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            Button editb1 = new Button("Remove Timetable");
-            Button editb2 = new Button("Add Timetable");
-            editPane.getChildren().addAll(editTitle, editl1, editList, editb1, editb2);
-            tbr.getChildren().addAll(editPane);
-        return tbr;
-
+            Button editb1 = new Button("Add Timetable");
+            editPane.getChildren().addAll(editTitle, editl1, editList, editb1);
+            sidebar.getChildren().addAll(editPane);
+        VBox homePane = new VBox();
+            homePane.setPrefWidth(250);
+            homePane.getStyleClass().add("vbox");
+            Label homeTitle = new Label("Get Breaks");
+            homeTitle.getStyleClass().add("title");
+            ListView<String> homelist = new ListView<>(names);
+            homelist.setPrefHeight(142);
+            homelist.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            Label homel1 =  new Label("Max time to wait (h:m):");
+            TextField homet1 = new TextField("1:00");
+            Button homeb1 = new Button("Show Breaks");
+            Button homeb2 = new Button("Delete Timetable");
+            homePane.getChildren().addAll(homeTitle, homelist, homel1, homet1, homeb1, homeb2);
+            sidebar.getChildren().add(homePane);
+        VBox tutePane = new VBox();
+            
     }
     
     

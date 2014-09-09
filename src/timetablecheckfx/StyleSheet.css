@@ -9,20 +9,40 @@ and open the template in the editor.
 */
 
 .menu {
-    -fx-background-color: #000000;
-    -fx-spacing: 10;
+    -fx-background-color: black;
+    -fx-text-fill: white;
+    -fx-padding: 0;
 }
 
-/*.side_bar {
+.menu-item:focused {
+    -fx-background-color: darkgray;
+}
+
+.menu-item:focused .label {
+}
+
+.menu-item .label {
+    -fx-text-fill: white;
+}
+
+.context-menu {
+    -fx-background-color: black;
+    -fx-background-insets: 0, 0, 2;
+    -fx-background-radius: 0 0 0 0, 0 0 0 0, 0 0 0 0;
+}
+
+.side_bar {
     -fx-background-color: #E6E6E6;
+    -fx-min-width: 1000;
+}
+
+.vbox {
+    -fx-padding: 20;
+    -fx-background-color: #E6E6E6;
+    -fx-spacing: 10;
 }
 
 .title {
     -fx-font-family: arial;
     -fx-font-size: 24;
-    -fx-color: red;
 }
-
-.v_box {
-    -fx-opacity: 0.0;
-}*/

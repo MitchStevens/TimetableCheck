@@ -1,9 +1,8 @@
 package timetablecheckfx;
 
-
-import java.awt.Color;
 import java.util.*;
 import  java.io.*;
+import javafx.scene.paint.Color;
 /**
  *
  * @author Mitch
@@ -13,8 +12,15 @@ public class Timetable {
     private List<Day> days;
     public String    name;
     public List<String> subjects;
-    final static Color[] colors = {new Color(236, 120, 48), new Color(146, 208, 80), new Color(255, 192, 0), new Color(91, 155, 213), new Color(155, 194, 230), new Color(255, 102, 255), Color.RED};
-
+    //final static Color[] colors = {new Color(155, 194, 230, 0.7), new Color(255, 102, 255, 0.7), Color.RED};
+    final public static Color[] colors = {new Color(0.9254, 0.4706, 0.0906, 0.9),
+        new Color(0.5725, 0.8157, 0.3137, 0.9),
+        new Color(1.0000, 0.7529, 0.0000, 0.9),
+        new Color(0.3569, 0.6078, 0.8363, 0.9),
+        Color.RED,
+        Color.RED,
+        Color.RED};
+    
     public Timetable(){
         this.name = "UNTITLED";
         this.subjects = new ArrayList<>();
