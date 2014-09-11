@@ -17,6 +17,10 @@ public class Moment {
     int day;
     int time;
     
+    public Moment(){
+        this.day = -1;
+        this.time = -1;
+    }
 
     public Moment(int day, int time) {
         this.day = day;
@@ -26,7 +30,7 @@ public class Moment {
     @Override
     public String toString() {
         if(this == null) return "empty moment";
-        else return daysOfWeek[day]+", "+Lesson.intToTime(time);
+        else return (day >= 0 && day < 5 ? daysOfWeek[day] : day)+", "+Lesson.intToTime(time);
     }
     
     

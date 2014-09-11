@@ -129,10 +129,20 @@ public class Lesson implements Comparable<Lesson>{
         return intToTime(this.timeStart)+" - "+intToTime(timeEnd);
     }
     
-    public Double pointLesson(Moment m){
-        double tbr = (double)(m.time - this.timeStart)/(double)this.durationMinutes();
-        if(tbr >= 0.0 && tbr <= 1.0) return tbr;
-        else return null;
+    public void snapPos(int snap){
+        int pos = this.timeStart % snap;
+        if(pos <= snap/2)
+            shift(-pos);
+        else
+            shift(-pos + snap);        
+    }
+    
+    public void snapDur(int snap){
+        int dur = this.durationMinutes() % snap;
+        if(dur <= snap/2)
+            this.timeEnd += -dur;
+        else
+            this.timeEnd += -dur + snap;
     }
     
     public void shift(int time){

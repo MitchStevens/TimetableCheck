@@ -13,6 +13,8 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 /**
  *
@@ -88,8 +90,8 @@ class TimetableList {
         return null;
     } 
     
-    public List<String> getNames(){
-        List<String> tbr = new ArrayList<>();
+    public ObservableList<String> getNames(){
+        ObservableList<String> tbr = FXCollections.observableArrayList();
         for(Timetable t : this.tList)
             tbr.add(t.name);
         return tbr;

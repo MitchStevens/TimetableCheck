@@ -6,7 +6,7 @@
 
 package timetablecheckfx;
 
-import java.awt.Point;
+import org.controlsfx.dialog.Dialog;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -20,17 +20,9 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
-import javafx.scene.image.WritableImage;
 import javafx.scene.layout.*;
-import javafx.scene.shape.*;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 
 /**
  *
@@ -40,7 +32,7 @@ public class TimetableCheckFX extends Application {
     public  static final File           save           = new File("Timetables/savedTimetables.tbl");
     private static final File           backup         = new File("Timetables/backupTimetables.tbl");
     
-    private static             TimetableList  allTimetables  = new TimetableList().fromFile(save);
+    private static             TimetableList  allTimetables  = TimetableList.fromFile(save);
     public  static             Timetable      myTimetable        = null;
     private static             List<String>   allNames       = allTimetables.getNames();
     public  static final String         versionName    = "0.3BETA";
@@ -50,8 +42,8 @@ public class TimetableCheckFX extends Application {
     private static StackPane        sidebar;
     private static MenuBar          menu;
     
-    private static int panelHeight = 700;
-    private static int panelWidth = 900;
+    private static double panelHeight = 700;
+    private static double panelWidth = 900;
     
     private void initialise(){
         //allTimetables = TimetableList.fromFile(save);
@@ -62,7 +54,7 @@ public class TimetableCheckFX extends Application {
     
     @Override
     public void start(Stage primaryStage) {        
-        StackPane root = new StackPane();
+        final StackPane root = new StackPane();
         Scene scene = new Scene(root, panelWidth, panelHeight);
         scene.getStylesheets().add("timetablecheckfx/StyleSheet.css");
         
@@ -72,6 +64,18 @@ public class TimetableCheckFX extends Application {
         border.setLeft(sidebar);
         tPane = new TimetablePane(null, panelWidth - 250, panelHeight - 30);
         border.setCenter(tPane.pane);
+        
+        ChangeListener<Number> changedSize = new ChangeListener<Number>() {
+            @Override public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
+                panelHeight = root.getHeight();
+                panelWidth = root.getWidth();
+                tPane.changeSize(panelWidth -250, panelHeight -30);
+                border.setCenter(tPane.pane);
+            }
+        };
+        
+        primaryStage.heightProperty().addListener(changedSize);
+        primaryStage.widthProperty().addListener(changedSize);
         
         root.getChildren().add(border);
         primaryStage.setScene(scene);
@@ -87,18 +91,20 @@ public class TimetableCheckFX extends Application {
         getBreaksItem.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
                 for(Node n : sidebar.getChildren())
-                    n.toBack();
-                sidebar.getChildren().get(1).toFront();
-                System.out.println("getbreaks");
+                    if(n.getId().equals("homePane")){
+                        n.toFront();
+                        break;
+                    }
             }
         });
         MenuItem editTimetableItem = new MenuItem("Edit");
         editTimetableItem.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
-               for(Node n : sidebar.getChildren())
-                   n.toBack();
-               sidebar.getChildren().get(0).toFront();
-                System.out.println("edit");
+                for(Node n : sidebar.getChildren())
+                    if(n.getId().equals("editPane")){
+                        n.toFront();
+                        break;
+                    }
             }
         });
         menuHome.getItems().addAll(getBreaksItem);
@@ -125,27 +131,27 @@ public class TimetableCheckFX extends Application {
         MenuItem tutorialItem = new MenuItem("Tutorial");
         tutorialItem.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
-                //Do things
+                for(Node n : sidebar.getChildren())
+                    if(n.getId().equals("tutePane")){
+                        n.toFront();
+                        break;
+                    }
             }
         });
         MenuItem aboutItem = new MenuItem("About");
         aboutItem.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
-                 String msg = "<html>TimetableCheck - Version "+versionName+
-                     "  <br>Made by Mitch Stevens"+
-                     "  <br>Contact at somecleverstatement@gmail.com"+
-                     "</html>";
-
-                JOptionPane optionPane = new JOptionPane();
-                optionPane.setMessage(msg);
-                optionPane.setMessageType(JOptionPane.INFORMATION_MESSAGE);
-                JDialog dialog = optionPane.createDialog(null, "Width 100");
-                dialog.setVisible(true);
+                Dialog about = new Dialog(border, "About");
+                about.setMasthead("TimetableCheck - Version "+versionName);
+                about.setContent("Made by Mitch Stevens\n" +
+                                 "Contact at somecleverstatement@gmail.com");
+                about.show();
             }
         });
         menuHelp.getItems().addAll(tutorialItem, aboutItem);
         
         menu.getMenus().addAll(menuHome, menuTimetable, menuHelp);
+        menu.setPrefHeight(20);
     }
     
     public void getSideBar(){
@@ -153,26 +159,25 @@ public class TimetableCheckFX extends Application {
         sidebar.getStyleClass().add("side_bar");
         //for editPane
         VBox editPane = new VBox();
-            editPane.setPrefWidth(250);
             editPane.getStyleClass().add("vbox");
+            editPane.setId("editPane");
             Label editTitle = new Label("Edit Timetable");
             editTitle.getStyleClass().add("title");
             Label editl1 = new Label("Add/Remove Lessons");
-            ObservableList<String> names = FXCollections.observableArrayList(
-                "Iron, Carbon, Thallium, Nitrogen, Oxygen".split(", "));
-            ListView<String> editList = new ListView(names);
-            editList.setPrefHeight(142);
+            ListView<String> editList = new ListView(allTimetables.getNames());
+            editList.setPrefHeight(148);
             editList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             Button editb1 = new Button("Add Timetable");
             editPane.getChildren().addAll(editTitle, editl1, editList, editb1);
             sidebar.getChildren().addAll(editPane);
         VBox homePane = new VBox();
-            homePane.setPrefWidth(250);
             homePane.getStyleClass().add("vbox");
+            homePane.setId("homePane");
             Label homeTitle = new Label("Get Breaks");
             homeTitle.getStyleClass().add("title");
-            ListView<String> homelist = new ListView<>(names);
-            homelist.setPrefHeight(142);
+            ListView<String> homelist = new ListView<>(allTimetables.getNames());
+            homelist.setPrefHeight(148);
+            homelist.getStyleClass().add("list-view");
             homelist.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             Label homel1 =  new Label("Max time to wait (h:m):");
             TextField homet1 = new TextField("1:00");
@@ -181,9 +186,26 @@ public class TimetableCheckFX extends Application {
             homePane.getChildren().addAll(homeTitle, homelist, homel1, homet1, homeb1, homeb2);
             sidebar.getChildren().add(homePane);
         VBox tutePane = new VBox();
-            
+            tutePane.setId("tutePane");
+            tutePane.getStyleClass().add("acc-vbox");
+            Label tuteTitle = new Label("Tutorial");
+            tuteTitle.getStyleClass().add("acc-title");
+            Accordion accordion = new Accordion();
+            accordion.getStyleClass().add("accordion");
+            TextArea tuteText = new TextArea("Label homel1 =  new Label(\"Max time to wait (h:m):\");\n" +
+                "TextField homet1 = new TextField(\"1:00\");\n" +
+                "Button homeb1 = new Button(\"Show Breaks\");\n" +
+                "Button homeb2 = new Button(\"Delete Timetable\");");
+            tuteText.getStyleClass().add("text-area");
+            tuteText.setPrefWidth(250);
+            TitledPane t1 = new TitledPane("Edit Timetable", tuteText);
+            TitledPane t2 = new TitledPane("T2", new Button("B2"));
+            TitledPane t3 = new TitledPane("T3", new Button("B3"));
+            accordion.getPanes().addAll(t1, t2, t3);
+            tutePane.getChildren().addAll(tuteTitle, accordion);
+            sidebar.getChildren().addAll(tutePane);
+            sidebar.getChildren().get(1).toFront();
     }
-    
     
     /**
      * The main() method is ignored in correctly deployed JavaFX application.

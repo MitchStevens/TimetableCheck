@@ -1,7 +1,6 @@
 package timetablecheckfx;
 
 import java.awt.FontMetrics;
-import java.awt.Point;
 import java.awt.image.BufferedImage;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -13,6 +12,7 @@ import javafx.scene.text.Text;
 import javafx.scene.input.MouseEvent;
 import java.util.*;
 import javafx.event.EventHandler;
+import javafx.geometry.Point2D;
 import javafx.scene.*; 
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
@@ -27,13 +27,13 @@ public class TimetablePane {
     
     private static final String[] DAYS_OF_THE_WEEK = "Monday, Tuesday, Wednesday, Thurday, Friday".split(", ");
     
-    private static Point            prevClick      = null;
+    private static Point2D            prevClick      = null;
     private static boolean          tableEditable  = false;
-    public  static int              snapTo         = 60;
+    public  static int              snapTo         = 30;
     public  static int              defaultSubject = 0;
     
-    private static int paneHeight;
-    private static int paneWidth;
+    private static double paneHeight;
+    private static double paneWidth;
     public static double colSpacing;
     private static double rowSpacing;
     
@@ -41,8 +41,8 @@ public class TimetablePane {
     public Pane pane;
     
     TimetablePane(Timetable t, double w, double h) {
-        paneHeight = (int)h;
-        paneWidth = (int)w;
+        paneHeight = h;
+        paneWidth = w;
         colSpacing = (paneWidth - HORI_MARGIN*2)/(double)(COL_NUM);
         rowSpacing = (paneHeight - VERT_MARGIN*2)/(double)(ROW_NUM +1);
         timetable = new Timetable("MitchSem2"
@@ -52,7 +52,6 @@ public class TimetablePane {
                 + "/780,840,0,EMPTY;840,900,3,EMPTY;960,1080,3,EMPTY;600,660,0,EMPTY;"
                 + "/540,600,2,EMPTY;600,660,0,EMPTY;"
                 + "/540,600,2,EMPTY;660,780,1,EMPTY;780,840,1,EMPTY;840,900,2,EMPTY;");
-        System.out.println(timetable.toString());
         
         this.pane = new Pane();
         pane.setPrefSize(paneHeight, paneWidth);
@@ -100,9 +99,11 @@ public class TimetablePane {
                 rect.setFill(lessonColor);
                 rect.setWidth(colSpacing -2);
                 rect.setHeight(l.durationHours()*rowSpacing -2);
-                LessonBox temp = new LessonBox(l, rect,
+                LessonBox temp = new LessonBox(l,
+                        rect,
                         new Text(3, 15, displayString(subjectName)),
-                        (l.durationHours() >= 1.0) ? new Text(3, 30, displayString(l.durationString())) : null);
+                        (l.durationHours() >= 1.0) ? new Text(3, 30, displayString(l.durationString())) : null,
+                         i);
                 temp.setLayoutX(x1);
                 temp.setLayoutY(y1);
                 //temp.b
@@ -123,119 +124,148 @@ public class TimetablePane {
         pane.getChildren().addAll(allLessons);
     }
     
+    public void changeSize(double w, double h){
+        this.pane = new TimetablePane(timetable, w, h).pane;
+        paneHeight = h;
+        paneWidth = w;
+        colSpacing = (paneWidth - HORI_MARGIN*2)/(double)(COL_NUM);
+        rowSpacing = (paneHeight - VERT_MARGIN*2)/(double)(ROW_NUM +1);
+    }
+    
     private String displayString(String text){
         if(displayWidth(text) < colSpacing) return text;
         while(displayWidth(text) > colSpacing - 25)
-            text = text.substring(0, text.length() -2);
+            text = text.substring(0, text.length() -1);
         return text+"...";
     }
     
     private int displayWidth(String text){
         BufferedImage img = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
-        FontMetrics fm = img.getGraphics().getFontMetrics(new java.awt.Font("Arial", java.awt.Font.PLAIN, 12));   
+        FontMetrics fm = img.getGraphics().getFontMetrics(new java.awt.Font("Arial", java.awt.Font.PLAIN, 16));   
         return fm.stringWidth(text);
     } 
-    
-    
-}
+ 
+    //Based on class at https://gist.github.com/miho/3821180.
+    class LessonBox extends Pane {
+        //Lesson info
+        private Lesson lesson;
+        private Text subject;
+        private Text duration;
+        private int day;
+        // node position
+        private double x = 0;
+        private double y = 0;
+        // mouse position
+        private double mousex = 0;
+        private double mousey = 0;
+        private Node view;
+        private boolean dragging = false;
+        private boolean moveToFront = true;
+ 
+        public LessonBox() {
+            init();
+        }
 
-//Based on class at https://gist.github.com/miho/3821180.
-class LessonBox extends Pane {
-    //Lesson info
-    private Lesson lesson;
-    
-    // node position
-    private double x = 0;
-    private double y = 0;
-    // mouse position
-    private double mousex = 0;
-    private double mousey = 0;
-    private Node view;
-    private boolean dragging = false;
-    private boolean moveToFront = true;
- 
-    public LessonBox() {
-        init();
-    }
- 
-    public LessonBox(Lesson l, Node view, Text s, Text d) {
-        this.view = view;
-        this.lesson = l;
-        getChildren().addAll(view, s, d);
-        init();
-    }
- 
-    private void init() {
- 
-        onMousePressedProperty().set(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
- 
-            // record the current mouse X and Y position on Node
-            mousex = event.getSceneX();
-            mousey = event.getSceneY();
- 
-            x = getLayoutX();
-            y = getLayoutY();
- 
-            if (isMoveToFront())
-                toFront();
+        public LessonBox(Lesson l, Node view, Text s, Text d, int day) {
+            this.view = view;
+            this.lesson = l;
+            this.subject = s;
+            this.duration = d;
+            this.day = day;
+            getChildren().addAll(view, subject, duration);
+            init();
         }
-    });
- 
-    //Event Listener for MouseDragged
-    onMouseDraggedProperty().set(new EventHandler<MouseEvent>() {
-    @Override
-    public void handle(MouseEvent event) {
-        // Get the exact moved X and Y
-        double offsetX = event.getSceneX() - mousex;
-        double offsetY = event.getSceneY() - mousey;
-        
-        x += 0;
-        y += offsetY;
- 
-        double scaledX = x;
-        double scaledY = y;
- 
-        setLayoutX(scaledX);
-        setLayoutY(scaledY);
- 
-        dragging = true;
- 
-        // again set current Mouse x AND y position
-        mousex = event.getSceneX();
-        mousey = event.getSceneY();
- 
-        event.consume();
-        }
-    });
- 
-    onMouseClickedProperty().set(new EventHandler<MouseEvent>() {
+
+        private void init() {
+            
+            onMousePressedProperty().set(new EventHandler<MouseEvent>() {
+                @Override
+                public void handle(MouseEvent event) {                    
+                // record the current mouse X and Y position on Node
+                mousex = event.getSceneX();
+                mousey = event.getSceneY();
+
+                x = getLayoutX();
+                y = getLayoutY();
+                prevClick = new Point2D(mousex, mousey);
+
+                if (isMoveToFront())
+                    toFront();
+            }
+        });
+
+        //Event Listener for MouseDragged
+        onMouseDraggedProperty().set(new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent event) {
-            dragging = false;
+            // Get the exact moved X and Y
+            double offsetX = event.getSceneX() - mousex;
+            double offsetY = event.getSceneY() - mousey;
+            
+          //x += 0;
+            y += offsetY;
+                
+           //Change text in lessonBox
+            int durationLesson = lesson.durationMinutes();
+            lesson.timeStart = getMoment(x, y).time;
+            lesson.timeEnd = lesson.timeStart + durationLesson;
+            duration.setText(lesson.durationString());
+
+            double scaledX = x;
+            double scaledY = y;
+
+            setLayoutX(scaledX);
+            setLayoutY(scaledY);
+
+            dragging = true;
+
+            // again set current Mouse x AND y position
+            mousex = event.getSceneX();
+            mousey = event.getSceneY();
+            event.consume();
+            }
+        });
+        
+        onMouseReleasedProperty().set(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                lesson.snapPos(snapTo);
+                duration.setText(lesson.durationString());
+                setLayoutY(VERT_MARGIN + (lesson.timeStart - 7*60)*rowSpacing/60);
+                
+                dragging = false;
+            }
+        });
+
         }
-    });
- 
-    }
- 
-    protected boolean isDragging() {
-        return dragging;
-    }
- 
-    public Node getView() {
-        return view;
-    }
- 
-    public void setMoveToFront(boolean moveToFront) {
-        this.moveToFront = moveToFront;
-    }
- 
-    public boolean isMoveToFront() {
-        return moveToFront;
+
+        protected boolean isDragging() {
+            return dragging;
+        }
+
+        public Node getView() {
+            return view;
+        }
+
+        public void setMoveToFront(boolean moveToFront) {
+            this.moveToFront = moveToFront;
+        }
+
+        public boolean isMoveToFront() {
+            return moveToFront;
+        }
+
+        public void removeNode(Node n) {
+            getChildren().remove(n);
+        }
+        
+        public Moment getMoment(double x, double y){
+            Moment tbr = new Moment();
+            tbr.day = (int)Math.floor(x/colSpacing);
+            tbr.time = (int)((y -rowSpacing -30)*60/rowSpacing) + 8*60;
+            System.out.println(tbr.toString());
+            return tbr;
+        }
     }
     
-    public void removeNode(Node n) {
-        getChildren().remove(n);
-    }
 }
